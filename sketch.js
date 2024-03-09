@@ -71,22 +71,28 @@ function draw() {
         }
     }
 }
+
 function placePlayer(graph) {
     // Convert graph nodes to array
     const nodes = Object.values(graph.nodes);
-    console.log(graph);
 
     // Filter nodes to only include those with adjacent nodes (i.e., not isolated)
     const possibleStartNodes = nodes.filter(node => node.adjacent.length > 0);
 
-    // Choose a random node from the filtered nodes
-    const startNode = possibleStartNodes[Math.floor(Math.random() * possibleStartNodes.length)];
+    let startNode;
+    let tries = 0; // to prevent an infinite loop
+    do {
+        // Choose a random node from the filtered nodes
+        startNode = possibleStartNodes[Math.floor(Math.random() * possibleStartNodes.length)];
+        tries++;
+    } while ((startNode.x === 0 || startNode.x === gridSize - 1 || startNode.y === 0 || startNode.y === gridSize - 1) && tries < 100);
+    // This loop avoids the edges and also ensures we do not loop forever
 
     // Now you have a random valid starting node for the player
-    player.posX = startNode.x * cellSize;
-    player.posY = startNode.y * cellSize;
-
+    player.posX = startNode.x * cellSize + cellSize / 2; // Center the player in the cell
+    player.posY = startNode.y * cellSize + cellSize / 2; // Center the player in the cell
 }
+
 
 
 // Function to build the graph based on the grid
