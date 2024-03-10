@@ -64,18 +64,28 @@ class Player {
 
 
     shoot(direction) {
-        let bulletSpeed = 5; // Speed of the bullets
+        let bulletSpeed = 18; // Speed of the bullets
         let bulletDx = 0;
         let bulletDy = 0;
+        const diagSpeed = bulletSpeed / Math.sqrt(2); // Speed for diagonal movement
 
-        // Set the direction based on the input
-        if (direction.includes('w')) bulletDy = -bulletSpeed;
-        if (direction.includes('s')) bulletDy = bulletSpeed;
-        if (direction.includes('a')) bulletDx = -bulletSpeed;
-        if (direction.includes('d')) bulletDx = bulletSpeed;
+        // Determine horizontal and vertical directions
+        if (direction.includes('w')) bulletDy = -diagSpeed;
+        if (direction.includes('s')) bulletDy = diagSpeed;
+        if (direction.includes('a')) bulletDx = -diagSpeed;
+        if (direction.includes('d')) bulletDx = diagSpeed;
+
+        // Correct speed for orthogonal movement (if only one key is pressed)
+        console.log(direction);
+        // if (direction.length == 1) {
+        //     if (direction == 'w' || direction == 'd') bulletDy *= Math.sqrt(2);
+        //     if (direction == 'w' || direction == 's') bulletDx *= Math.sqrt(2);
+        // }
 
         // Add a new bullet to the bullets array
-        bullets.push({ x: this.posX, y: this.posY, dx: bulletDx, dy: bulletDy });
+        bullets.push({ x: this.posX, y: this.posY, dx: bulletDx, dy: bulletDy, speed: bulletSpeed });
     }
+
+
 
 }

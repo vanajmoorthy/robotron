@@ -12,6 +12,8 @@ let bullets = [];
 let player;
 let mapGraph = new Graph();
 
+let shootFlag = false;
+
 
 function setup() {
     // Calculate the size of each grid cell
@@ -39,7 +41,6 @@ function setup() {
     // Connect the rooms with corridors
     connectRooms();
     refillAdjacentDiagonals(grid);
-    console.log(grid);
 
     buildGraph();
 
@@ -53,26 +54,49 @@ function draw() {
     background(0);
     strokeWeight(0.5);
 
-    player.show();
     // Draw the grid
     drawGrid();
 
     player.move();
     player.show();
 
+    // Determine the direction for shooting based on key states
+    let direction = "";
+    if (keyIsDown(87) || keyIsDown(119)) { // 'W' or 'w'
+        direction += 'w';
+    }
+    if (keyIsDown(65) || keyIsDown(97)) { // 'A' or 'a'
+        direction += 'a';
+    }
+    if (keyIsDown(83) || keyIsDown(115)) { // 'S' or 's'
+        direction += 's';
+    }
+    if (keyIsDown(68) || keyIsDown(100)) { // 'D' or 'd'
+        direction += 'd';
+    }
+
+    // Shoot bullets on key press
+    if (!shootFlag && direction) {
+        player.shoot(direction);
+        shootFlag = true;
+    }
+
     // Update and show bullets
     for (let i = bullets.length - 1; i >= 0; i--) {
         let bullet = bullets[i];
         fill(255, 0, 0); // Bullet color
-        circle(bullet.x, bullet.y, 5); // Draw the bullet
-        bullet.x += bullet.dx; // Move the bullet
-        bullet.y += bullet.dy; // Move the bullet
+        circle(bullet.x, bullet.y, cellSize / 4); // Draw the bullet
+        let bulletSpeedPerFrame = bullet.speed * (deltaTime / 1000); // Decouple from frame rate
+        bullet.x += bullet.dx * bulletSpeedPerFrame; // Move the bullet decoupled from frame rate
+        bullet.y += bullet.dy * bulletSpeedPerFrame; // Move the bullet decoupled from frame rate
 
         // Remove bullets that go off-screen
         if (bullet.x < 0 || bullet.x > width || bullet.y < 0 || bullet.y > height) {
             bullets.splice(i, 1);
         }
     }
+
+
 }
 
 function placePlayer(graph) {
@@ -124,16 +148,16 @@ function buildGraph() {
     }
 }
 
-
-function keyPressed() {
-    // Handle shooting
-    let direction = "";
-    if (key === 'W' || key === 'w') direction += 'w';
-    if (key === 'A' || key === 'a') direction += 'a';
-    if (key === 'S' || key === 's') direction += 's';
-    if (key === 'D' || key === 'd') direction += 'd';
-
-    // If a direction was set, shoot
-    if (direction) player.shoot(direction);
+function keyReleased() {
+    // Reset the shoot flag when any of the shooting keys is released
+    if (
+        keyCode === 87 || keyCode === 119 || // 'W' or 'w'
+        keyCode === 65 || keyCode === 97 || // 'A' or 'a'
+        keyCode === 83 || keyCode === 115 || // 'S' or 's'
+        keyCode === 68 || keyCode === 100    // 'D' or 'd'
+    ) {
+        shootFlag = false;
+    }
 }
+
 

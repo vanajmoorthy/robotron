@@ -88,19 +88,15 @@ function refillAdjacentDiagonals(grid) {
             if (grid[i][j] == 1) {
 
                 if (top == 0 && right == 0 && topRight == 1) {
-                    console.log(`${i}, ${j} top right diagonal`);
                     // Fill right cell
                     grid[i + 1][j] = 1;
                 } else if (right == 0 && bottom == 0 && bottomRight == 1) {
-                    console.log(`${i}, ${j} bottom right diagonal`);
                     // Fill right cell
                     grid[i + 1][j] = 1;
                 } else if (bottom == 0 && left == 0 && bottomLeft == 1) {
-                    console.log(`${i}, ${j} bottom left diagonal`);
                     // Fill left cell
                     grid[i - 1][j] = 1;
                 } else if (left == 0 && top == 0 && topLeft == 1) {
-                    console.log(`${i}, ${j} top left diagonal`);
                     // Fill left cell
                     grid[i - 1][j] = 1;
                 }
