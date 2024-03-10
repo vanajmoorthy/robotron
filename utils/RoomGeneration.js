@@ -12,8 +12,9 @@ function generateRooms(count) {
     while (rooms.length < count) {
         // Randomly determine room size and position
         let roomSize = floor(random(3, maxRoomSize));
-        let x = floor(random(0, gridSize - roomSize));
-        let y = floor(random(0, gridSize - roomSize));
+        // Ensure rooms are generated at least one cell away from the edge
+        let x = floor(random(1, gridSize - roomSize - 1));
+        let y = floor(random(1, gridSize - roomSize - 1));
 
         // Create a room object with boundaries
         let room = { x, y, width: roomSize, height: roomSize };
@@ -70,12 +71,58 @@ function connectRooms() {
     }
 }
 
+function refillAdjacentDiagonals(grid) {
+    for (let i = 1; i < grid.length - 1; i++) {
+        for (let j = 1; j < grid[i].length - 1; j++) {
+            let topLeft = grid[i - 1][j - 1];
+            let top = grid[i][j - 1];
+            let topRight = grid[i + 1][j - 1];
+
+            let left = grid[i - 1][j];
+            let right = grid[i + 1][j];
+
+            let bottomLeft = grid[i - 1][j + 1];
+            let bottom = grid[i][j + 1];
+            let bottomRight = grid[i + 1][j + 1];
+
+            if (grid[i][j] == 1) {
+
+                if (top == 0 && right == 0 && topRight == 1) {
+                    console.log(`${i}, ${j} top right diagonal`);
+                    // Fill right cell
+                    grid[i + 1][j] = 1;
+                } else if (right == 0 && bottom == 0 && bottomRight == 1) {
+                    console.log(`${i}, ${j} bottom right diagonal`);
+                    // Fill right cell
+                    grid[i + 1][j] = 1;
+                } else if (bottom == 0 && left == 0 && bottomLeft == 1) {
+                    console.log(`${i}, ${j} bottom left diagonal`);
+                    // Fill left cell
+                    grid[i - 1][j] = 1;
+                } else if (left == 0 && top == 0 && topLeft == 1) {
+                    console.log(`${i}, ${j} top left diagonal`);
+                    // Fill left cell
+                    grid[i - 1][j] = 1;
+                }
+
+            }
+
+
+        }
+    }
+}
+
+
 
 
 function connectPoints(pointA, pointB) {
     let corridor = []; // Array to hold the corridor path
-    let x = pointA.x, y = pointA.y;
+
+    let x = pointA.x;
+    let y = pointA.y;
+
     let lastDirection = null; // Variable to store the last movement direction
+
     let targetX = pointB.x;
     let targetY = pointB.y;
 
@@ -101,6 +148,8 @@ function connectPoints(pointA, pointB) {
         }
     }
 
+
+
     // While the target is not reached, keep moving
     while (x !== targetX || y !== targetY) {
         corridor.push({ x, y });
@@ -121,8 +170,8 @@ function connectPoints(pointA, pointB) {
         }
 
         // Enforce grid boundaries
-        x = constrain(x, 0, gridSize - 1);
-        y = constrain(y, 0, gridSize - 1);
+        x = constrain(x, 1, gridSize - 1);
+        y = constrain(y, 1, gridSize - 1);
     }
 
     return corridor; // Return the array of corridor cells
@@ -133,15 +182,26 @@ function connectPoints(pointA, pointB) {
 // Function to draw the grid on the canvas
 function drawGrid() {
     let cellSize = windowSize / gridSize; // Calculate the size of each grid cell
-
+    textSize(cellSize / 4); // Adjust text size based on the cell size
+    fill(255);
+    textAlign(CENTER, CENTER);
     // Iterate over each cell in the grid
     for (let x = 0; x < gridSize; x++) {
         for (let y = 0; y < gridSize; y++) {
             // Fill the cell color based on its type (room or corridor)
             if (grid[x][y] == 1) {
                 push();
-                noStroke();
+                stroke(255);
+                strokeWeight(0.5);
                 fill(180, 180, 180);
+                rect(x * cellSize, y * cellSize, cellSize, cellSize);
+
+                pop();
+            } else if (grid[x][y] == 3) { // For debugging
+                push();
+                stroke(255);
+                strokeWeight(0.5);
+                fill(255, 0, 0);
                 rect(x * cellSize, y * cellSize, cellSize, cellSize);
 
                 pop();
@@ -150,6 +210,11 @@ function drawGrid() {
                 stroke(255);
                 rect(x * cellSize, y * cellSize, cellSize, cellSize);
             }
+
+            fill(255); // Text color
+
+            // For debugging
+            // text(`${x},${y}`, x * cellSize + cellSize / 2, y * cellSize + cellSize / 2);
         }
     }
 }

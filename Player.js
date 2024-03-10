@@ -4,7 +4,7 @@ class Player {
         this.posY;
         this.size = size;
         this.lives = lives;
-        this.speed = 2;
+        this.speed = 100;
     }
 
     show() {
@@ -16,32 +16,52 @@ class Player {
     }
 
     move() {
-        if (keyIsDown(UP_ARROW) && this.canMove(this.posX, this.posY - this.speed)) {
-            this.posY -= this.speed;
+        const speedPerFrame = this.speed * (deltaTime / 1000); // Convert speed to per-frame movement
+
+
+        if (keyIsDown(UP_ARROW) && this.canMove(this.posX, this.posY - speedPerFrame)) {
+            this.posY -= speedPerFrame;
         }
-        if (keyIsDown(DOWN_ARROW) && this.canMove(this.posX, this.posY + this.speed)) {
-            this.posY += this.speed;
+        if (keyIsDown(DOWN_ARROW) && this.canMove(this.posX, this.posY + speedPerFrame)) {
+            this.posY += speedPerFrame;
         }
-        if (keyIsDown(RIGHT_ARROW) && this.canMove(this.posX + this.speed, this.posY)) {
-            this.posX += this.speed;
+        if (keyIsDown(RIGHT_ARROW) && this.canMove(this.posX + speedPerFrame, this.posY)) {
+            this.posX += speedPerFrame;
         }
-        if (keyIsDown(LEFT_ARROW) && this.canMove(this.posX - this.speed, this.posY)) {
-            this.posX -= this.speed;
+        if (keyIsDown(LEFT_ARROW) && this.canMove(this.posX - speedPerFrame, this.posY)) {
+            this.posX -= speedPerFrame;
         }
     }
 
+    // Check if the new position is a valid move
     canMove(newX, newY) {
-        // This is a placeholder; you'll need collision detection with the grid
-        for (let cell of grid) {
-            if (grid == 1) {
-                console.log("can move");
-            } else {
-                console.log("no");
+        // Adjust the positions to account for the radius of the player circle
+        let leftEdge = newX - this.size / 2;
+        let rightEdge = newX + this.size / 2;
+        let topEdge = newY - this.size / 2;
+        let bottomEdge = newY + this.size / 2;
 
-            }
+        // Convert pixel coordinates back to grid index
+        let gridLeft = Math.floor(leftEdge / cellSize);
+        let gridRight = Math.floor(rightEdge / cellSize);
+        let gridTop = Math.floor(topEdge / cellSize);
+        let gridBottom = Math.floor(bottomEdge / cellSize);
+
+        // Check if any edge of the player circle is outside the grid bounds
+        if (gridLeft < 0 || gridRight >= gridSize || gridTop < 0 || gridBottom >= gridSize) {
+            return false; // New position is out of bounds
         }
-        return true; // Replace with actual grid check
+
+        // Check if the cells in the grid at the edges of the player circle are walkable
+        // You may need to check more cells here if your grid cell size is smaller than the player size
+        return (
+            grid[gridLeft][gridTop] === 1 &&
+            grid[gridRight][gridTop] === 1 &&
+            grid[gridLeft][gridBottom] === 1 &&
+            grid[gridRight][gridBottom] === 1
+        );
     }
+
 
     shoot(direction) {
         let bulletSpeed = 5; // Speed of the bullets

@@ -28,7 +28,7 @@ class Graph {
 
     addEdge(node1, node2) {
         node1.addAdjacent(node2);
-        node2.addAdjacent(node1); // If the graph is undirected
+        node2.addAdjacent(node1);
     }
 
     getNode(x, y) {

@@ -18,7 +18,7 @@ function setup() {
 
     // Calculate the window size, leaving some margin
     windowSize = min(windowHeight, windowWidth) - 30;
-    cellSize = (windowSize / gridSize) - 5;
+    cellSize = (windowSize / gridSize);
 
     // Set up the canvas with the computed window size
     createCanvas(windowSize, windowSize);
@@ -30,7 +30,7 @@ function setup() {
     let startPosition = createVector(0, 0);
 
     // Initialize the player with the start position
-    player = new Player(cellSize, startPosition, 5);
+    player = new Player(cellSize - 5, startPosition, 5);
 
 
     // Generate rooms and place them on the grid
@@ -38,10 +38,13 @@ function setup() {
 
     // Connect the rooms with corridors
     connectRooms();
+    refillAdjacentDiagonals(grid);
+    console.log(grid);
 
     buildGraph();
 
     placePlayer(mapGraph);
+
 }
 
 
