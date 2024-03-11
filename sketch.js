@@ -10,13 +10,19 @@ let cellSize; // Calculate the size of each grid cell
 let bullets = [];
 
 let player;
-let mapGraph = new Graph();
+let mapGraph;
 
-let shootFlag = false;
+let canShoot = false;
+
+let numberOfObstacles = 10;
+
+let obstacles = [];
+
+let isGameOver = false;
 
 
 function setup() {
-    // Calculate the size of each grid cell
+    mapGraph = new Graph();
 
     // Calculate the window size, leaving some margin
     windowSize = min(windowHeight, windowWidth) - 30;
@@ -28,12 +34,8 @@ function setup() {
     // Initialize the grid
     grid = makeGrid(gridSize);
 
-    // let startPosition = findStartPositionInRoomOrCorridor();
-    let startPosition = createVector(0, 0);
-
-    // Initialize the player with the start position
-    player = new Player(cellSize - 5, startPosition, 5);
-
+    // Initialize the player 
+    player = new Player();
 
     // Generate rooms and place them on the grid
     generateRooms(roomCount);
@@ -44,15 +46,29 @@ function setup() {
 
     buildGraph();
 
-    placePlayer(mapGraph);
+    placeObject(mapGraph, player);
+
+    let playerPosition = player.gridPosition;
+
+    generateObstacles(numberOfObstacles, mapGraph, playerPosition);
 
 }
-
 
 function draw() {
     // Set the background color of the canvas
     background(0);
     strokeWeight(0.5);
+
+    if (isGameOver) {
+        // Show game over screen or restart the game
+        fill(255);
+        textSize(32);
+        textAlign(CENTER, CENTER);
+        text('Game Over - Restarting...', width / 2, height / 2);
+        noLoop(); // Stop the draw loop
+        setTimeout(restartGame, 3000); // Restart the game after 3 seconds
+        return; // Exit the function to avoid drawing anything else
+    }
 
     // Draw the grid
     drawGrid();
@@ -60,7 +76,7 @@ function draw() {
     player.move();
     player.show();
 
-    // Determine the direction for shooting based on key states
+    // Determine the direction for shooting based on arrow key states
     let direction = "";
     if (keyIsDown(87) || keyIsDown(119)) { // 'W' or 'w'
         direction += 'w';
@@ -76,76 +92,73 @@ function draw() {
     }
 
     // Shoot bullets on key press
-    if (!shootFlag && direction) {
+    if (!canShoot && direction) {
         player.shoot(direction);
-        shootFlag = true;
+        canShoot = true;
     }
 
-    // Update and show bullets
     for (let i = bullets.length - 1; i >= 0; i--) {
         let bullet = bullets[i];
-        fill(255, 0, 0); // Bullet color
-        circle(bullet.x, bullet.y, cellSize / 4); // Draw the bullet
         let bulletSpeedPerFrame = bullet.speed * (deltaTime / 1000); // Decouple from frame rate
-        bullet.x += bullet.dx * bulletSpeedPerFrame; // Move the bullet decoupled from frame rate
-        bullet.y += bullet.dy * bulletSpeedPerFrame; // Move the bullet decoupled from frame rate
 
-        // Remove bullets that go off-screen
-        if (bullet.x < 0 || bullet.x > width || bullet.y < 0 || bullet.y > height) {
+        // Calculate the new position of the bullet
+        let newX = bullet.x + bullet.dx * bulletSpeedPerFrame;
+        let newY = bullet.y + bullet.dy * bulletSpeedPerFrame;
+
+        // Convert pixel coordinates back to grid index
+        let gridX = Math.floor(newX / cellSize);
+        let gridY = Math.floor(newY / cellSize);
+
+        // Check if the bullet is about to hit a wall
+        if (gridX < 0 || gridX >= gridSize || gridY < 0 || gridY >= gridSize || grid[gridX][gridY] === 0) {
+            // Remove the bullet if it's out of bounds or hits a wall
             bullets.splice(i, 1);
+        } else {
+            // If no collision, update the bullet's position
+            bullet.x = newX;
+            bullet.y = newY;
+
+            // Draw the bullet
+            push();
+            fill(255, 0, 0); // Bullet color
+            noStroke();
+            circle(bullet.x, bullet.y, cellSize / 4); // Draw the bullet
+            pop();
         }
     }
 
+    for (let obstacle of obstacles) {
+        if (obstacle.isActive && player.checkCollision(obstacle)) {
+            player.lives -= 1;
+            obstacle.isActive = false;
+            console.log(player.lives);
 
-}
-
-function placePlayer(graph) {
-    // Convert graph nodes to array
-    const nodes = Object.values(graph.nodes);
-
-    // Filter nodes to only include those with adjacent nodes (i.e., not isolated)
-    const possibleStartNodes = nodes.filter(node => node.adjacent.length > 0);
-
-    let startNode;
-    let tries = 0; // to prevent an infinite loop
-    do {
-        // Choose a random node from the filtered nodes
-        startNode = possibleStartNodes[Math.floor(Math.random() * possibleStartNodes.length)];
-        tries++;
-    } while ((startNode.x === 0 || startNode.x === gridSize - 1 || startNode.y === 0 || startNode.y === gridSize - 1) && tries < 100);
-    // This loop avoids the edges and also ensures we do not loop forever
-
-    // Now you have a random valid starting node for the player
-    player.posX = startNode.x * cellSize + cellSize / 2; // Center the player in the cell
-    player.posY = startNode.y * cellSize + cellSize / 2; // Center the player in the cell
-}
-
-
-
-// Function to build the graph based on the grid
-// Function to build the graph based on the grid
-function buildGraph() {
-    for (let x = 0; x < gridSize; x++) {
-        for (let y = 0; y < gridSize; y++) {
-            if (grid[x][y] === 1) { // If the cell is walkable
-                let node = mapGraph.addNode(x, y);
-
-                // Check orthogonal adjacent cells (up, down, left, right)
-                const directions = [[1, 0], [0, 1], [-1, 0], [0, -1]];
-                for (const [dx, dy] of directions) {
-                    let newX = x + dx;
-                    let newY = y + dy;
-
-                    if (newX >= 0 && newY >= 0 && newX < gridSize && newY < gridSize) {
-                        if (grid[newX][newY] === 1) { // If the adjacent cell is walkable
-                            let adjacentNode = mapGraph.addNode(newX, newY);
-                            mapGraph.addEdge(node, adjacentNode);
-                        }
-                    }
-                }
+            if (player.lives <= 0) {
+                isGameOver = true;
             }
         }
+
+        // Check for bullet collision with active obstacles
+        for (let j = bullets.length - 1; j >= 0; j--) {
+            let bullet = bullets[j];
+            if (obstacle.isActive && obstacle.checkCollision(bullet)) {
+                bullets.splice(j, 1); // Remove the bullet
+                obstacle.isActive = false; // Deactivate the obstacle
+            }
+        }
+
+        obstacle.show();
     }
+}
+
+function restartGame() {
+    // Reset necessary variables and setup the game again
+    isGameOver = false;
+    player.lives = 5; // Reset player lives
+    obstacles = []; // Clear obstacles
+    bullets = []; // Clear bullets
+    setup(); // Re-setup the game
+    loop(); // Restart the draw loop
 }
 
 function keyReleased() {
@@ -156,7 +169,7 @@ function keyReleased() {
         keyCode === 83 || keyCode === 115 || // 'S' or 's'
         keyCode === 68 || keyCode === 100    // 'D' or 'd'
     ) {
-        shootFlag = false;
+        canShoot = false;
     }
 }
 

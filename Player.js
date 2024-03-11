@@ -1,23 +1,32 @@
 class Player {
-    constructor(size, lives) {
+    constructor() {
         this.posX;
         this.posY;
-        this.size = size;
-        this.lives = lives;
+        this.size = cellSize - 10;
+        this.lives = 5;
         this.speed = 100;
+        this.gridPosition;
     }
 
     show() {
         push();
-        fill(255, 0, 0);
+        fill(14, 125, 230);
         noStroke();
         circle(this.posX, this.posY, this.size);
         pop();
     }
 
+    checkCollision(obstacle) {
+        let dx = this.posX - obstacle.posX;
+        let dy = this.posY - obstacle.posY;
+        let distance = Math.sqrt(dx * dx + dy * dy);
+
+        // Check if the distance between player and obstacle centers is less than their combined radii
+        return distance < (this.size / 2 + obstacle.size / 2);
+    }
+
     move() {
         const speedPerFrame = this.speed * (deltaTime / 1000); // Convert speed to per-frame movement
-
 
         if (keyIsDown(UP_ARROW) && this.canMove(this.posX, this.posY - speedPerFrame)) {
             this.posY -= speedPerFrame;
@@ -32,6 +41,7 @@ class Player {
             this.posX -= speedPerFrame;
         }
     }
+
 
     // Check if the new position is a valid move
     canMove(newX, newY) {
@@ -62,9 +72,8 @@ class Player {
         );
     }
 
-
     shoot(direction) {
-        let bulletSpeed = 18; // Speed of the bullets
+        let bulletSpeed = 20; // Speed of the bullets
         let bulletDx = 0;
         let bulletDy = 0;
         const diagSpeed = bulletSpeed / Math.sqrt(2); // Speed for diagonal movement
@@ -75,17 +84,7 @@ class Player {
         if (direction.includes('a')) bulletDx = -diagSpeed;
         if (direction.includes('d')) bulletDx = diagSpeed;
 
-        // Correct speed for orthogonal movement (if only one key is pressed)
-        console.log(direction);
-        // if (direction.length == 1) {
-        //     if (direction == 'w' || direction == 'd') bulletDy *= Math.sqrt(2);
-        //     if (direction == 'w' || direction == 's') bulletDx *= Math.sqrt(2);
-        // }
-
         // Add a new bullet to the bullets array
         bullets.push({ x: this.posX, y: this.posY, dx: bulletDx, dy: bulletDy, speed: bulletSpeed });
     }
-
-
-
 }

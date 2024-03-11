@@ -100,15 +100,10 @@ function refillAdjacentDiagonals(grid) {
                     // Fill left cell
                     grid[i - 1][j] = 1;
                 }
-
             }
-
-
         }
     }
 }
-
-
 
 
 function connectPoints(pointA, pointB) {
