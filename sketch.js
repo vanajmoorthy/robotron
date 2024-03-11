@@ -14,11 +14,13 @@ let mapGraph;
 
 let canShoot = false;
 
-let numberOfObstacles = 10;
+let numberOfObstacles = gridSize / 2;
 
 let obstacles = [];
 
 let isGameOver = false;
+
+let excludedPositions = [];
 
 
 function setup() {
@@ -46,11 +48,11 @@ function setup() {
 
     buildGraph();
 
-    placeObject(mapGraph, player);
+    placeObject(mapGraph, player, [], false);
 
-    let playerPosition = player.gridPosition;
+    excludedPositions = [player.gridPosition];
 
-    generateObstacles(numberOfObstacles, mapGraph, playerPosition);
+    generateObstacles(numberOfObstacles, mapGraph, excludedPositions);
 
 }
 
