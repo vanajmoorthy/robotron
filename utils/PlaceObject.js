@@ -44,9 +44,10 @@ function placeObject(graph, object, excludedPositions = [], avoidAdjacent = true
         return;
     }
 
-    object.posX = startNode.x * cellSize + cellSize / 2;
-    object.posY = startNode.y * cellSize + cellSize / 2;
     object.gridPosition = [startNode.x, startNode.y];
+    // Derive posX and posY from gridPosition
+    object.posX = object.gridPosition[0] * cellSize + cellSize / 2;
+    object.posY = object.gridPosition[1] * cellSize + cellSize / 2;
 }
 
 function anyAdjacentNodeIsExcluded(node, excludedPositions) {

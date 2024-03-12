@@ -100,6 +100,29 @@ function refillAdjacentDiagonals(grid) {
                     // Fill left cell
                     grid[i - 1][j] = 1;
                 }
+
+                // This section of the code is checking if there is a horizontal path through the current cell.
+                // If there is a room or corridor to the left (grid[i-1][j] == 1) AND to the right (grid[i+1][j] == 1) of the current cell,
+                // it will then check the diagonally adjacent cells to see if they should be converted into corridors or not.
+                // This helps to avoid isolated diagonal corridors which are not reachable.
+                if (grid[i - 1][j] == 1 && grid[i + 1][j] == 1) {
+                    // These lines check each diagonally adjacent cell. If the cell is already part of a room or corridor (value of 1),
+                    // it remains unchanged. Otherwise, it's left as an empty space (value of 0).
+                    grid[i - 1][j - 1] = grid[i - 1][j - 1] == 1 ? 1 : 0;
+                    grid[i + 1][j - 1] = grid[i + 1][j - 1] == 1 ? 1 : 0;
+                    grid[i - 1][j + 1] = grid[i - 1][j + 1] == 1 ? 1 : 0;
+                    grid[i + 1][j + 1] = grid[i + 1][j + 1] == 1 ? 1 : 0;
+                }
+
+                // This section is doing the same thing as the previous one, but for a vertical path through the current cell.
+                // If there is a room or corridor above (grid[i][j-1] == 1) AND below (grid[i][j+1] == 1) the current cell,
+                // it performs the same checks on the diagonally adjacent cells to ensure there's no isolated corridor created diagonally.
+                if (grid[i][j - 1] == 1 && grid[i][j + 1] == 1) {
+                    grid[i - 1][j - 1] = grid[i - 1][j - 1] == 1 ? 1 : 0;
+                    grid[i + 1][j - 1] = grid[i + 1][j - 1] == 1 ? 1 : 0;
+                    grid[i - 1][j + 1] = grid[i - 1][j + 1] == 1 ? 1 : 0;
+                    grid[i + 1][j + 1] = grid[i + 1][j + 1] == 1 ? 1 : 0;
+                }
             }
         }
     }
@@ -205,7 +228,7 @@ function drawGrid() {
             fill(255); // Text color
 
             // For debugging
-            // text(`${x},${y}`, x * cellSize + cellSize / 2, y * cellSize + cellSize / 2);
+            text(`${x},${y}`, x * cellSize + cellSize / 2, y * cellSize + cellSize / 2);
         }
     }
 }

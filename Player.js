@@ -1,16 +1,16 @@
 class Player {
     constructor() {
+        this.gridPosition;
         this.posX;
         this.posY;
         this.size = cellSize - 10;
         this.lives = 5;
         this.speed = 100;
-        this.gridPosition;
     }
 
     show() {
         push();
-        fill(14, 125, 230);
+        fill(14, 125, 255);
         noStroke();
         circle(this.posX, this.posY, this.size);
         pop();
@@ -28,18 +28,35 @@ class Player {
     move() {
         const speedPerFrame = this.speed * (deltaTime / 1000); // Convert speed to per-frame movement
 
+        let moved = false; // Track if the player has moved
+
         if (keyIsDown(UP_ARROW) && this.canMove(this.posX, this.posY - speedPerFrame)) {
             this.posY -= speedPerFrame;
+            moved = true;
         }
         if (keyIsDown(DOWN_ARROW) && this.canMove(this.posX, this.posY + speedPerFrame)) {
             this.posY += speedPerFrame;
+            moved = true;
         }
         if (keyIsDown(RIGHT_ARROW) && this.canMove(this.posX + speedPerFrame, this.posY)) {
             this.posX += speedPerFrame;
+            moved = true;
         }
         if (keyIsDown(LEFT_ARROW) && this.canMove(this.posX - speedPerFrame, this.posY)) {
             this.posX -= speedPerFrame;
+            moved = true;
         }
+
+        if (moved) {
+            // Update gridPosition after moving
+            this.updateGridPosition();
+        }
+    }
+
+    updateGridPosition() {
+        // Convert pixel coordinates to grid index and update gridPosition
+        this.gridPosition[0] = Math.floor(this.posX / cellSize);
+        this.gridPosition[1] = Math.floor(this.posY / cellSize);
     }
 
 

@@ -23,3 +23,19 @@ function buildGraph() {
         }
     }
 }
+
+function pruneGraph(graph, obstacles) {
+    obstacles.forEach(obstacle => {
+        const [obstacleX, obstacleY] = obstacle.gridPosition;
+        // Remove the obstacle node from the graph
+        graph.removeNode(obstacleX, obstacleY);
+    });
+
+    // Iterate through all remaining nodes to remove connections to the removed nodes
+    graph.nodes.forEach(node => {
+        // Filter out connections to removed nodes
+        node.adjacent = node.adjacent.filter(neighbor => {
+            return !obstacles.some(obstacle => obstacle[0] === neighbor.x && obstacle[1] === neighbor.y);
+        });
+    });
+}

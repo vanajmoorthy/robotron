@@ -1,16 +1,16 @@
 class Obstacle {
     constructor() {
+        this.gridPosition;
         this.posX;
         this.posY;
         this.size = cellSize;
         this.isActive = true;
-        this.gridPosition;
     }
 
     show() {
         if (this.isActive) {
             push();
-            fill(255, 0, 0);
+            fill(255, 0, 0, 255);
             noStroke();
             circle(this.posX, this.posY, this.size);
             pop();
