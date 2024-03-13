@@ -1,7 +1,7 @@
 // Global variables
 let windowSize;            // To store the size of the window for the canvas
 let grid;                  // The grid that will represent our dungeon map
-const gridSize = 25;       // The size of the grid (25x25 in this case)
+const gridSize = 22;       // The size of the grid (25x25 in this case)
 const roomCount = 5;       // The number of rooms to generate
 const maxRoomSize = 15;    // The maximum size of a room
 const rooms = [];          // An array to store the room objects
@@ -21,9 +21,27 @@ let obstacles = [];
 let isGameOver = false;
 
 let excludedPositions = [];
-let familyMembers = [];
+let fathers = [];
+let mothers = [];
+let siblings = [];
 
-let numberOfFamilyMembers = 5;
+let familySpeed = 50;
+
+let totalScore = 0;
+let lives = 3;
+let numberOfRobots = 3;
+let robots = [];
+let robotSpeed = 70;
+
+// Probability of a family member appearing in each cell (e.g., 5%)
+const familyMemberProbability = 0.05;
+
+const familyMemberType = Object.freeze({
+    MOTHER: 'mother',
+    FATHER: 'father',
+    SIBLING: 'sibling'
+});
+
 
 
 function setup() {
@@ -40,7 +58,7 @@ function setup() {
     grid = makeGrid(gridSize);
 
     // Initialize the player 
-    player = new Player();
+    player = new Player(lives);
 
     // Generate rooms and place them on the grid
     generateRooms(roomCount);
@@ -51,7 +69,7 @@ function setup() {
 
     buildGraph();
 
-    placeObject(mapGraph, player, [], false);
+    placeObject(mapGraph, player, [], false, 0);
 
     excludedPositions = [player.gridPosition];
 
@@ -65,110 +83,14 @@ function setup() {
 
     generateObstacles(numberOfObstacles, mapGraph, excludedPositions);
 
-
     pruneGraph(mapGraph, obstacles);
-    generateFamilyMembers(mapGraph, numberOfFamilyMembers);
-
-
+    updateGridWithObstacles(obstacles);
+    generateRobots(numberOfRobots, mapGraph, robotSpeed);
+    populateMapWithFamilyMembers(mapGraph);
 
 
 }
 
-function isConnected(graph) {
-    let visited = new Set();
-    let nodes = Object.values(graph.nodes);
-
-    // Start BFS from the first node in the graph
-    let queue = [nodes[0]];
-
-    while (queue.length > 0) {
-        let node = queue.shift();
-
-        // If we've already visited this node, skip it
-        if (visited.has(node)) {
-            continue;
-        }
-
-        // Mark the node as visited
-        visited.add(node);
-
-        // Add all unvisited adjacent nodes to the queue
-        for (let adjacent of node.adjacent) {
-            if (!visited.has(adjacent)) {
-                queue.push(adjacent);
-            }
-        }
-    }
-
-    // The graph is connected if we've visited all nodes
-    return visited.size === nodes.length;
-}
-
-
-function generateFamilyMembers(graph, numberOfFamilyMembers) {
-    for (let i = 0; i < numberOfFamilyMembers; i++) {
-        familyMembers.push(new FamilyMember(100, 1));
-        placeObject(graph, familyMembers[i], excludedPositions, true);
-    }
-}
-
-function drawPath(path) {
-    if (path && path.length > 0) {
-        // Set the stroke to visually distinguish the path, e.g., red color
-        stroke(255, 0, 0);
-        strokeWeight(2); // Set the thickness of the path line
-
-        for (let i = 0; i < path.length - 1; i++) {
-            // Convert grid coordinates to pixel coordinates
-            let startX = path[i].x * cellSize + cellSize / 2;
-            let startY = path[i].y * cellSize + cellSize / 2;
-            let endX = path[i + 1].x * cellSize + cellSize / 2;
-            let endY = path[i + 1].y * cellSize + cellSize / 2;
-
-            // Draw a line segment between each pair of points on the path
-            line(startX, startY, endX, endY);
-        }
-
-        // Reset stroke weight after drawing the path
-        strokeWeight(0.5);
-    }
-}
-
-// Function to draw the graph on the canvas
-function drawGraph(graph) {
-    // Draw nodes
-    for (let node of graph.nodes) {
-        const x = node.x * cellSize + cellSize / 2;
-        const y = node.y * cellSize + cellSize / 2;
-
-        // Draw a circle representing the node
-        fill(255, 255, 255, 255);
-        noStroke();
-        circle(x, y, cellSize / 4);
-
-        // Draw node coordinates
-        fill(255, 255, 255, 255);
-
-        textAlign(CENTER, CENTER);
-        text(`(${node.x},${node.y})`, x, y);
-    }
-
-    // Draw edges
-    for (let node of graph.nodes) {
-        for (let neighbor of node.adjacent) {
-            const x1 = node.x * cellSize + cellSize / 2;
-            const y1 = node.y * cellSize + cellSize / 2;
-            const x2 = neighbor.x * cellSize + cellSize / 2;
-            const y2 = neighbor.y * cellSize + cellSize / 2;
-
-            // Draw a line between connected nodes
-            stroke(255, 255, 255, 80);
-
-            strokeWeight(1);
-            line(x1, y1, x2, y2);
-        }
-    }
-}
 
 function draw() {
     // Set the background color of the canvas
@@ -191,22 +113,56 @@ function draw() {
 
     player.move();
     player.show();
+    player.update();
 
-    drawGraph(mapGraph);
+    // drawGraph(mapGraph);
 
     // Update and display each family member
-    for (let member of familyMembers) {
+    for (let member of fathers) {
         member.update(mapGraph);
         member.show();
         // drawPath(member.currentPath);
 
-        // // Check for collision with the player
-        // if (member.checkCollision(player)) {
-        //     player.lives -= 1; // Subtract a life from the player
-        //     if (player.lives <= 0) {
-        //         isGameOver = true;
-        //     }
-        // }
+        // Check for collision with the player
+        if (member.checkCollision(player)) {
+            console.log(`rescue ${member.type}`);
+            totalScore += member.points;
+            member.isActive = false;
+        }
+    }
+
+    for (let member of mothers) {
+        member.update(mapGraph);
+        member.show();
+        // drawPath(member.currentPath);
+
+        // Check for collision with the player
+        if (member.checkCollision(player)) {
+            console.log(`rescue ${member.type}`);
+            totalScore += member.points;
+            member.isActive = false;
+
+        }
+    }
+
+    for (let member of siblings) {
+        member.update(mapGraph);
+        member.show();
+        // drawPath(member.currentPath);
+
+
+        // Check for collision with the player
+        if (member.checkCollision(player)) {
+            console.log(`rescue ${member.type}`);
+            totalScore += member.points;
+            member.isActive = false;
+
+        }
+    }
+
+    for (let robot of robots) {
+        robot.update(player);
+        robot.show();
     }
 
     // Determine the direction for shooting based on arrow key states
@@ -264,7 +220,7 @@ function draw() {
         if (obstacle.isActive && player.checkCollision(obstacle)) {
             player.lives -= 1;
             obstacle.isActive = false;
-
+            player.collide();
             if (player.lives <= 0) {
                 isGameOver = true;
             }
@@ -275,21 +231,35 @@ function draw() {
             let bullet = bullets[j];
             if (obstacle.isActive && obstacle.checkCollision(bullet)) {
                 bullets.splice(j, 1); // Remove the bullet
+                // Set the cell to traversable after the object is removed
+                grid[obstacle.gridPosition[0]][obstacle.gridPosition[1]] = 1;
                 obstacle.isActive = false; // Deactivate the obstacle
             }
         }
 
         obstacle.show();
     }
+
+    push();
+    fill(255); // Text color
+    textSize(cellSize / 2);
+    textAlign(LEFT);
+    text(`Lives remaining: ${player.lives}`, cellSize / 2, cellSize / 2);
+    text(`Score: ${totalScore}`, cellSize / 2, cellSize * 1.5);
+
+    pop();
 }
 
 function restartGame() {
     // Reset necessary variables and setup the game again
     isGameOver = false;
-    player.lives = 5; // Reset player lives
+    player.lives = lives; // Reset player lives
     obstacles = []; // Clear obstacles
     bullets = []; // Clear bullets
-    familyMembers = [];
+    fathers = [];
+    mothers = [];
+    siblings = [];
+    totalScore = 0;
 
     setup(); // Re-setup the game
     loop(); // Restart the draw loop

@@ -1,28 +1,53 @@
 class FamilyMember {
-    constructor(maxSpeed, maxAcceleration) {
+    constructor(maxSpeed, type) {
         this.gridPosition; // Initialize with a default value
         this.posX = 0; // Initialize with a default value
         this.posY = 0; // Initialize with a default value
         this.velX = 0;
         this.velY = 0;
         this.maxSpeed = maxSpeed;
-        this.maxAcceleration = maxAcceleration;
         this.size = cellSize;
         this.currentPath = [];
+        this.type = type;
+        this.color;
+        this.points;
+        this.setType();
+        this.isActive = true;
     }
     // Display the family member on the canvas
     show() {
+        if (!this.isActive) {
+            return;
+        }
+
         push();
-        fill(0, 255, 0, 255); // Changed color to green for distinction
+        fill(this.color[0], this.color[1], this.color[2], 255);
         noStroke();
         circle(this.posX, this.posY, this.size);
         pop();
     }
 
+    setType() {
+        if (this.type === 'mother') {
+            this.points = 50;
+            this.color = [235, 52, 201];
+        } else if (this.type === 'father') {
+            this.points = 50;
+            this.color = [245, 153, 32];
+        } else if (this.type === 'sibling') {
+            this.points = 10;
+            this.color = [12, 132, 237];
+        } else {
+            console.log("Invalid family member type");
+        }
+    }
+
     update(mapGraph) {
+        if (!this.isActive) {
+            return;
+        }
         // Ensure there's a goal and a path to follow
         let goal = player.gridPosition;
-        console.log(goal);
         if (this.currentPath.length > 1) {
             // The next position to move towards is the second item in the path
             // (the first item is the current position)
@@ -169,11 +194,15 @@ class FamilyMember {
 
     // Check for collision with the player
     checkCollision(player) {
+        if (!this.isActive) {
+            return;
+        }
         let dx = this.posX - player.posX;
         let dy = this.posY - player.posY;
         let distance = Math.sqrt(dx * dx + dy * dy);
 
         // Simple circle collision detection
         return distance < (this.size / 2 + player.size / 2);
+
     }
 }

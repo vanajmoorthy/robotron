@@ -39,3 +39,33 @@ function pruneGraph(graph, obstacles) {
         });
     });
 }
+
+function isConnected(graph) {
+    let visited = new Set();
+    let nodes = Object.values(graph.nodes);
+
+    // Start BFS from the first node in the graph
+    let queue = [nodes[0]];
+
+    while (queue.length > 0) {
+        let node = queue.shift();
+
+        // If we've already visited this node, skip it
+        if (visited.has(node)) {
+            continue;
+        }
+
+        // Mark the node as visited
+        visited.add(node);
+
+        // Add all unvisited adjacent nodes to the queue
+        for (let adjacent of node.adjacent) {
+            if (!visited.has(adjacent)) {
+                queue.push(adjacent);
+            }
+        }
+    }
+
+    // The graph is connected if we've visited all nodes
+    return visited.size === nodes.length;
+}

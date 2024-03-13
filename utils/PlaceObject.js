@@ -1,4 +1,4 @@
-function placeObject(graph, object, excludedPositions = [], avoidAdjacent = true) {
+function placeObject(graph, object, excludedPositions = [], avoidAdjacent = true, type) {
     if (!graph || !graph.nodes) {
         console.error("Graph or nodes are undefined.");
         return;
@@ -44,10 +44,19 @@ function placeObject(graph, object, excludedPositions = [], avoidAdjacent = true
         return;
     }
 
+
+
     object.gridPosition = [startNode.x, startNode.y];
     // Derive posX and posY from gridPosition
     object.posX = object.gridPosition[0] * cellSize + cellSize / 2;
     object.posY = object.gridPosition[1] * cellSize + cellSize / 2;
+
+    if (type === 1) {
+        // console.log(object.gridPosition);
+        // console.log(cellSize);
+        // console.log(object.posX);
+        // console.log(object.posY);
+    }
 }
 
 function anyAdjacentNodeIsExcluded(node, excludedPositions) {

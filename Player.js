@@ -1,19 +1,35 @@
 class Player {
-    constructor() {
+    constructor(lives) {
         this.gridPosition;
         this.posX;
         this.posY;
         this.size = cellSize - 10;
-        this.lives = 5;
+        this.lives = lives;
         this.speed = 100;
+        this.hitTime = 0;          // Time since the player was hit
+        this.hitDuration = 500;   // Duration of hit effect in milliseconds
+        this.isHit = false;        // Is the player currently hit
     }
+
 
     show() {
         push();
-        fill(14, 125, 255);
+        if (this.isHit) {
+            // Change color to red if hit
+            fill(255, 0, 0);
+        } else {
+            // Original color
+            fill(79, 79, 79);
+
+        }
         noStroke();
         circle(this.posX, this.posY, this.size);
         pop();
+    }
+
+    collide() {
+        this.isHit = true;
+        this.hitTime = millis();
     }
 
     checkCollision(obstacle) {
@@ -59,6 +75,12 @@ class Player {
         this.gridPosition[1] = Math.floor(this.posY / cellSize);
     }
 
+    update() {
+        // Call this method in the draw function to keep updating the player state
+        if (this.isHit && millis() - this.hitTime > this.hitDuration) {
+            this.isHit = false;
+        }
+    }
 
     // Check if the new position is a valid move
     canMove(newX, newY) {
