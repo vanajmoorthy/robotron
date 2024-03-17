@@ -92,6 +92,8 @@ function drawGrid() {
 
             // For debugging
             text(`${x},${y}`, x * cellSize + cellSize / 2, y * cellSize + cellSize / 2);
+            // text(`${grid[x][y]}`, x * cellSize + cellSize / 2, y * cellSize + cellSize / 2);
+
         }
     }
 }

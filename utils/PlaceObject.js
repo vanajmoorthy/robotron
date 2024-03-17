@@ -50,13 +50,6 @@ function placeObject(graph, object, excludedPositions = [], avoidAdjacent = true
     // Derive posX and posY from gridPosition
     object.posX = object.gridPosition[0] * cellSize + cellSize / 2;
     object.posY = object.gridPosition[1] * cellSize + cellSize / 2;
-
-    if (type === 1) {
-        // console.log(object.gridPosition);
-        // console.log(cellSize);
-        // console.log(object.posX);
-        // console.log(object.posY);
-    }
 }
 
 function anyAdjacentNodeIsExcluded(node, excludedPositions) {

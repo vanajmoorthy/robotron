@@ -1,11 +1,11 @@
 class Player {
-    constructor(lives) {
+    constructor(lives, speed) {
         this.gridPosition;
         this.posX;
         this.posY;
         this.size = cellSize - 10;
         this.lives = lives;
-        this.speed = 100;
+        this.speed = speed;
         this.hitTime = 0;          // Time since the player was hit
         this.hitDuration = 500;   // Duration of hit effect in milliseconds
         this.isHit = false;        // Is the player currently hit
@@ -24,6 +24,11 @@ class Player {
         }
         noStroke();
         circle(this.posX, this.posY, this.size);
+        noFill();
+        strokeWeight(1.5);
+        stroke(255);
+        circle(this.posX, this.posY, this.size / 1.5);
+
         pop();
     }
 
@@ -73,6 +78,7 @@ class Player {
         // Convert pixel coordinates to grid index and update gridPosition
         this.gridPosition[0] = Math.floor(this.posX / cellSize);
         this.gridPosition[1] = Math.floor(this.posY / cellSize);
+        // console.log("player grid position: ", this.gridPosition);
     }
 
     update() {
@@ -92,9 +98,9 @@ class Player {
 
         // Convert pixel coordinates back to grid index
         let gridLeft = Math.floor(leftEdge / cellSize);
-        let gridRight = Math.floor(rightEdge / cellSize);
+        let gridRight = Math.ceil(rightEdge / cellSize) - 1; // Adjusted to ensure we check the correct grid cells
         let gridTop = Math.floor(topEdge / cellSize);
-        let gridBottom = Math.floor(bottomEdge / cellSize);
+        let gridBottom = Math.ceil(bottomEdge / cellSize) - 1; // Adjusted similarly
 
         // Check if any edge of the player circle is outside the grid bounds
         if (gridLeft < 0 || gridRight >= gridSize || gridTop < 0 || gridBottom >= gridSize) {
@@ -102,17 +108,20 @@ class Player {
         }
 
         // Check if the cells in the grid at the edges of the player circle are walkable
-        // You may need to check more cells here if your grid cell size is smaller than the player size
-        return (
-            grid[gridLeft][gridTop] === 1 &&
-            grid[gridRight][gridTop] === 1 &&
-            grid[gridLeft][gridBottom] === 1 &&
-            grid[gridRight][gridBottom] === 1
-        );
+        for (let x = gridLeft; x <= gridRight; x++) {
+            for (let y = gridTop; y <= gridBottom; y++) {
+                // Allow movement if the cell is walkable or is an obstacle that can be passed through
+                if (!(grid[x][y] === 1 || grid[x][y] === 2)) {
+                    return false; // Block movement if any part of the player would move into an unwalkable cell
+                }
+            }
+        }
+        return true; // Movement is allowed
     }
 
+
     shoot(direction) {
-        let bulletSpeed = 20; // Speed of the bullets
+        let bulletSpeed = cellSize / 2; // Speed of the bullets
         let bulletDx = 0;
         let bulletDy = 0;
         const diagSpeed = bulletSpeed / Math.sqrt(2); // Speed for diagonal movement

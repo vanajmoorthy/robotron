@@ -12,7 +12,10 @@ class Obstacle {
             push();
             fill(255, 0, 0, 255);
             noStroke();
-            circle(this.posX, this.posY, this.size);
+            rectMode(CENTER);
+            square(this.posX, this.posY, this.size);
+            // circle(this.posX, this.posY, this.size);
+
             fill(0, 0, 0, 255);
 
             circle(this.posX, this.posY, this.size / 4);
