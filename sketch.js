@@ -274,7 +274,7 @@ function startNewWave() {
 
     // Check if the grid size should be increased
     if (wave % gridSizeIncrement === 0) {
-        gridSize++; // Adjust based on how you manage the grid size and make sure to regenerate the grid
+        gridSize++;
         cellSize = (windowSize / gridSize);
         onGridSizeChanged();
     }
@@ -460,7 +460,7 @@ function reInitialiseMapAndGameState() {
     generateObstacles(numberOfObstacles, mapGraph, excludedPositions);
     pruneGraph(mapGraph, obstacles);
     updateGridWithObstacles(obstacles);
-    populateMapWithRobots(mapGraph, robotSpeed, maxNumberOfRobots); // Adjusted to populateMapWithRobots function call
+    populateMapWithRobots(mapGraph, robotSpeed, maxNumberOfRobots);
     resetFamilyMembers();
 }
 

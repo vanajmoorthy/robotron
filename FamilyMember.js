@@ -31,7 +31,7 @@ class FamilyMember {
         circle(this.posX, this.posY, this.size);
         pop();
 
-        // // If isFleeingFromRobots is true or drawFleeingRadius is true, draw the fleeing radius
+        // // // If isFleeingFromRobots is true or drawFleeingRadius is true, draw the fleeing radius
         // if (this.isFleeingFromRobots) {
         //     push();
         //     stroke(255, 0, 0);
@@ -61,7 +61,7 @@ class FamilyMember {
             this.points = 50;
             this.color = [235, 52, 201];
         } else if (this.type === 'father') {
-            this.points = 50;
+            this.points = 40;
             this.color = [87, 179, 57];
         } else if (this.type === 'sibling') {
             this.points = 35;

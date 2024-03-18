@@ -413,7 +413,7 @@ class Robot {
         square(this.posX, this.posY, this.size / 3);
 
         pop();
-        // // Draw the ray if the robot can see the player
+        // Draw the ray if the robot can see the player
         // if (this.isActive && this.canSeePlayer) {
         //     stroke(255, 0, 0); // Red color for the ray
         //     line(this.posX, this.posY, player.posX, player.posY);

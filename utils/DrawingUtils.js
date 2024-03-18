@@ -91,7 +91,7 @@ function drawPauseMenu() {
 // Function to draw the grid on the canvas
 function drawGrid() {
     let cellSize = windowSize / gridSize; // Calculate the size of each grid cell
-    textSize(cellSize / 4); // Adjust text size based on the cell size
+    textSize(cellSize / 4);
     fill(255);
     textAlign(CENTER, CENTER);
     // Iterate over each cell in the grid
