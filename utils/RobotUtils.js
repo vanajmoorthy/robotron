@@ -1,25 +1,26 @@
 function populateMapWithRobots(graph, speed, maxNumberOfRobots) {
     let nodes = Object.values(graph.nodes);
-    let counter = 0;
+
+    let familyRobot = new Robot(mapGraph, speed, robotType.FAMILY); // Create a new robot with the random type
+    let playerRobot = new Robot(mapGraph, speed, robotType.PLAYER); // Create a new robot with the random type
+    let convertorRobot = new Robot(mapGraph, speed, robotType.CONVERTOR); // Create a new robot with the random type
+
+    placeObject(mapGraph, familyRobot, [], false, 0);
+    placeObject(mapGraph, playerRobot, [], false, 0);
+    placeObject(mapGraph, convertorRobot, [], false, 0);
+
+    robots.push(familyRobot);
+    robots.push(playerRobot);
+    robots.push(convertorRobot);
+
 
     nodes.forEach(node => {
-        // if (counter > 8 && counter < 10) {
-        //     let newRobot = new Robot(mapGraph, speed);
-
-        //     robots.push(newRobot);
-        //     newRobot.gridPosition = [node.x, node.y];
-        //     newRobot.posX = node.x * cellSize + cellSize / 2;
-        //     newRobot.posY = node.y * cellSize + cellSize / 2;
-        // };
-        // counter++;
-
         if (Math.random() < robotGenerationProbability) {
-            // Here you would decide the type randomly or by some other logic
-            let newRobot = new Robot(mapGraph, speed);
+            const robotType = getRandomRobotType(); // Get a random robot type
+            let newRobot = new Robot(mapGraph, speed, robotType); // Create a new robot with the random type
 
-            // Make sure this position is not already taken by another family member or the player
+            // Make sure this position is not already taken by another entity
             if (!positionIsTaken([node.x, node.y]) && robots.length < maxNumberOfRobots) {
-                // Place the family member in this cell
                 newRobot.gridPosition = [node.x, node.y];
                 newRobot.posX = node.x * cellSize + cellSize / 2;
                 newRobot.posY = node.y * cellSize + cellSize / 2;
@@ -28,3 +29,10 @@ function populateMapWithRobots(graph, speed, maxNumberOfRobots) {
         }
     });
 }
+
+function getRandomRobotType() {
+    const types = Object.values(robotType).slice(0, -1); // Convert enum to array without last value
+    const randomIndex = Math.floor(Math.random() * types.length); // Generate a random index
+    return types[randomIndex]; // Return a random robot type
+}
+

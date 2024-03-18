@@ -5,6 +5,7 @@ let gridSize = 22;       // The size of the grid (25x25 in this case)
 const roomCount = 5;       // The number of rooms to generate
 const maxRoomSize = 15;    // The maximum size of a room
 const rooms = [];          // An array to store the room objects
+let customDeltaTime;
 
 let cellSize; // Calculate the size of each grid cell
 let bullets = [];
@@ -14,7 +15,7 @@ let mapGraph;
 
 let canShoot = false;
 
-let numberOfObstacles = gridSize / 3;
+let numberOfObstacles = gridSize / 4;
 
 let obstacles = [];
 
@@ -48,13 +49,23 @@ let countdown = gameStartDelay;
 let wave = 0;
 let robotSpeedIncrement = 5;
 let familySpeedIncrement = 5;
-let playerSpeedIncrement = 5;
+let playerSpeedIncrement = 4;
 
 let gridSizeIncrement = 3; // How many waves before increasing grid size
 let gameStarted = false; // This declares and initializes gameStarted globally
 
 let lastPlayerGridPosition; // Initialize with the player's starting grid position
+let isPaused = false;
 
+let lastUpdateTime = 0; // Track the last update time for custom deltaTime calculation
+
+let powerUps = [];
+let powerUpSpawnInterval = 10000; // Example: spawn a power-up every 10 seconds
+let lastPowerUpSpawnTime = 0;
+
+let robotKillSound;
+let pickUpSound;
+let obstacleExplodeSound;
 
 const familyMemberType = Object.freeze({
     MOTHER: 'mother',
@@ -63,48 +74,63 @@ const familyMemberType = Object.freeze({
 });
 
 
+const robotType = Object.freeze({
+    PLAYER: 'player',
+    FAMILY: 'family',
+    CONVERTOR: 'convertor',
+    BOMBER: 'bomber'
+});
+
+function preload() {
+    robotKillSound = loadSound("./assets/robot-kill.mp3");
+    pickUpSound = loadSound("./assets/pick.mp3");
+    obstacleExplodeSound = loadSound("./assets/obstacle-explode.mp3");
+}
 
 function setup() {
-    mapGraph = new Graph();
+    do {
+        mapGraph = new Graph();
+        grid = makeGrid(gridSize);
+
+        // Initialize the player 
+
+        // Generate rooms and place them on the grid
+        generateRooms(roomCount);
+
+        // Connect the rooms with corridors
+        connectRooms();
+        refillAdjacentDiagonals(grid);
+
+        buildGraph();
+    } while (!isConnected(mapGraph));
+
 
     // Calculate the window size, leaving some margin
-    windowSize = min(windowHeight, windowWidth) - 30;
+    windowSize = min(windowHeight, windowWidth) - 90;
     cellSize = (windowSize / gridSize);
 
     // Set up the canvas with the computed window size
-    let canvas = createCanvas(windowSize, windowSize);
+    canvas = createCanvas(windowSize, windowSize);
 
     resetButton = createButton('Restart');
     let canvasPosition = canvas.position(); // Get the current position of the canvas
     resetButton.position(canvasPosition.x + windowSize - resetButton.width - 10, canvasPosition.y + 20); // Position button relative to the canvas
     resetButton.mousePressed(restartGame); // Attach the event listener to reset the game when clicked
-    // Initialize the grid
-    grid = makeGrid(gridSize);
 
-    // Initialize the player 
+    pauseButton = createButton('Pause');
+    pauseButton.position(resetButton.x - pauseButton.width - 20, canvasPosition.y + 20);
+    pauseButton.mousePressed(togglePause);
+
     player = new Player(lives, playerSpeed);
-
-    // Generate rooms and place them on the grid
-    generateRooms(roomCount);
-
-    // Connect the rooms with corridors
-    connectRooms();
-    refillAdjacentDiagonals(grid);
-
-    buildGraph();
 
     placeObject(mapGraph, player, [], false, 0);
     lastPlayerGridPosition = player.gridPosition.slice();
 
+
     excludedPositions = [player.gridPosition];
 
     // Call this function after pruning
-    if (!isConnected(mapGraph)) {
-        console.log("The graph is not fully connected after pruning.");
-        // Handle the disconnected graph, e.g., by re-generating or reconnecting it
-    } else {
-        console.log("fully connected");
-    }
+
 
     generateObstacles(numberOfObstacles, mapGraph, excludedPositions);
 
@@ -118,8 +144,34 @@ function setup() {
 
 }
 
+function togglePause() {
+    isPaused = !isPaused;
+    if (isPaused) {
+        pauseButton.html('Resume');
+        noLoop(); // Stops the draw loop
+    } else {
+        pauseButton.html('Pause');
+        lastUpdateTime = millis();
+
+        loop(); // Starts the draw loop
+    }
+
+    console.log(customDeltaTime);
+}
+
+
 
 function draw() {
+
+    if (isPaused) {
+        drawPauseMenu();
+        return;
+    }
+
+    const currentTime = millis();
+    customDeltaTime = currentTime - lastUpdateTime;
+    lastUpdateTime = currentTime;
+
     background(0);
     strokeWeight(0.5);
     handleCountdown();
@@ -134,29 +186,9 @@ function draw() {
         return; // Freeze updates if game hasn't started or is over
     }
 
-
-
     updateGameEntities();
-}
+    handlePowerUps();
 
-
-function displayGameInfo() {
-    push();
-    fill(255); // Text color
-    textSize(cellSize / 2);
-    textAlign(LEFT);
-    text(`Lives remaining: ${player.lives}`, cellSize / 2, cellSize / 2);
-    text(`Score: ${totalScore}`, cellSize / 2, cellSize * 1.5);
-
-    pop();
-}
-
-function displayGameOver() {
-    background(0);
-    fill(255);
-    textSize(32);
-    textAlign(CENTER, CENTER);
-    text('Game Over! Click the restart button to play again', width / 2, height / 2);
 }
 
 
@@ -176,7 +208,7 @@ function renderGameEntities() {
 }
 
 function updateGameEntities() {
-    if (!gameStarted) return; // Do not update if the game hasn't started
+    if (!gameStarted || isPaused) return; // Do not update if the game hasn't started
 
     // Player movement and actions
     player.move();
@@ -185,18 +217,26 @@ function updateGameEntities() {
     // Shooting logic
     handleShooting();
 
+    if (Math.floor(totalScore / 500) > Math.floor(player.lastScoreGain / 500)) {
+        player.lives += 1;
+        player.lastScoreGain += 500; // Increment lastScoreGain to the next threshold
+        console.log('New life added! Lives:', player.lives);
+    }
+
+
     // Update each family member's logic and check for collision with the player
     [...fathers, ...mothers, ...siblings].forEach(member => {
         member.update(mapGraph, robots);
         if (member.checkCollision(player)) {
             totalScore += member.points;
             member.isActive = false; // Deactivate the family member
+            pickUpSound.play();
         }
     });
 
     // Update robots' logic
     robots.forEach(robot => {
-        robot.update(player);
+        robot.update(player, mothers, fathers, siblings);
     });
 
     // Bullets logic
@@ -208,6 +248,7 @@ function updateGameEntities() {
             obstacle.isActive = false;
             player.collide();
             obstacleRemovedFlag = true;
+            obstacleExplodeSound.play();
             if (player.lives <= 0) {
                 isGameOver = true;
             }
@@ -228,10 +269,6 @@ function startNewWave() {
     robotSpeed += robotSpeedIncrement;
     familySpeed += familySpeedIncrement;
     playerSpeed += playerSpeedIncrement;
-
-    console.log("robot speed ", robotSpeed);
-    console.log("fam speed ", familySpeed);
-    console.log("player speed ", playerSpeed);
 
     robotGenerationProbability += 0.01;
 
@@ -265,9 +302,6 @@ function onGridSizeChanged() {
 }
 
 function redrawGameState() {
-    // Clear the canvas or game area
-    // clear();
-
     // Redraw the grid
     drawGrid();
 
@@ -309,8 +343,8 @@ function updateBullets() {
     for (let i = bullets.length - 1; i >= 0; i--) {
         let bullet = bullets[i];
         // Calculate the bullet's new position based on its velocity and the elapsed time
-        let newX = bullet.x + bullet.dx * (bullet.speed * (deltaTime / 1000));
-        let newY = bullet.y + bullet.dy * (bullet.speed * (deltaTime / 1000));
+        let newX = bullet.x + bullet.dx * (bullet.speed * (customDeltaTime / 1000));
+        let newY = bullet.y + bullet.dy * (bullet.speed * (customDeltaTime / 1000));
 
         // Check for wall collisions
         let gridX = Math.floor(newX / cellSize);
@@ -331,6 +365,7 @@ function updateBullets() {
                 grid[obstacles[j].gridPosition[0]][obstacles[j].gridPosition[1]] = 1; // Make the cell walkable
                 obstacles[j].isActive = false; // Deactivate the obstacle
                 obstacleRemovedFlag = true;
+                obstacleExplodeSound.play();
 
                 break; // Exit the loop since the bullet has been removed
             }
@@ -342,6 +377,8 @@ function updateBullets() {
                 bullets.splice(i, 1); // Remove the bullet
                 robots[k].isActive = false; // Deactivate the robot
                 robots.splice(k, 1);
+                obstacleExplodeSound.play();
+
                 break; // Exit the loop since the bullet has been removed
             }
         }
@@ -360,8 +397,6 @@ function handleCountdown() {
     }
 }
 
-
-
 function restartGame() {
     // Reset necessary variables to their initial states
     isGameOver = false;
@@ -375,6 +410,8 @@ function restartGame() {
     familySpeed = 30;
     gridSize = 22; // Reset grid size if you changed it
 
+    player.lastScoreGain = 0;
+
     // Clear arrays holding game objects
     obstacles = [];
     bullets = [];
@@ -382,6 +419,12 @@ function restartGame() {
     mothers = [];
     siblings = [];
     robots = []; // Make sure to clear the robots array as well
+
+
+    if (isPaused) {
+        isPaused = false;
+        pauseButton.html('Pause');
+    }
 
     // Reinitialize the grid and mapGraph
     onGridSizeChanged();

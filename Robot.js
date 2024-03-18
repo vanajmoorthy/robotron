@@ -1,5 +1,5 @@
 class Robot {
-    constructor(mapGraph, speed) {
+    constructor(mapGraph, speed, type) {
         this.mapGraph = mapGraph;
         this.gridPosition = null; // Initialize to null
         this.posX = 0;
@@ -9,8 +9,26 @@ class Robot {
         this.canSeePlayer = false;
         this.size = cellSize / 1.25;
         this.isActive = true; // To control the active status of the robot
+        this.type = type;
+        this.color = [];
+        this.setType();
+        this.isFrozen = false;
     }
 
+    setType() {
+        if (this.type === 'player') {
+            this.color = [40, 40, 40];
+        } else if (this.type === 'family') {
+            this.color = [148, 13, 121];
+        } else if (this.type === 'convertor') {
+            this.color = [255, 229, 204];
+        } else if (this.type === 'bomber') {
+            this.color = [255, 0, 0];
+        } else {
+            console.log("Invalid robot type");
+        }
+
+    }
     raycast(player) {
         let dx = player.posX - this.posX;
         let dy = player.posY - this.posY;
@@ -52,8 +70,8 @@ class Robot {
         let normalizedVector = this.normalize(diffVector, this.speed);
 
         // Apply the normalized velocity
-        this.posX += normalizedVector.x * (deltaTime / 1000);
-        this.posY += normalizedVector.y * (deltaTime / 1000);
+        this.posX += normalizedVector.x * (customDeltaTime / 1000);
+        this.posY += normalizedVector.y * (customDeltaTime / 1000);
 
         // Check if the robot has reached the target position
         if (Math.abs(this.posX - targetX) < 5 && Math.abs(this.posY - targetY) < 5) {
@@ -117,28 +135,75 @@ class Robot {
         }
     }
 
-    update(player) {
-        if (!this.isActive) return;
+    placeBomb() {
+        if (this.type === 'bomber' && Math.random() < 0.005) { // Adjust the probability as needed
+            let bombPosition = { x: this.gridPosition[0], y: this.gridPosition[1] };
+            let newBomb = new Obstacle(); // Use your obstacle constructor
+            newBomb.posX = bombPosition.x * cellSize + cellSize / 2;
+            newBomb.posY = bombPosition.y * cellSize + cellSize / 2;
+            newBomb.gridPosition = [bombPosition.x, bombPosition.y];
 
-        // Perform raycasting to determine if the player can be seen
-        this.raycast(player);
+            console.log("placing at ", bombPosition);
 
+            // placeObject(this.mapGraph, newBomb, [], false);
+            obstacles.push(newBomb); // Assuming obstacles is the array storing your game's obstacles
+            grid[bombPosition.x][bombPosition.y] = 2;
+            pruneGraph(this.mapGraph, obstacles);
 
-        // Recalculate path if necessary
-        if (this.canSeePlayer) {
-            this.seekPlayer(player);
-        } else {
-            this.patrol();
         }
+    }
 
+    update(player, mothers, fathers, siblings) {
+        if (!this.isActive || this.isFrozen) return;
+
+        // Handle different robot types
+        switch (this.type) {
+            case 'player':
+                // Perform raycasting to determine if the player can be seen
+                this.raycast(player);
+                // Recalculate path if necessary
+                if (this.canSeePlayer) {
+                    this.seekPlayer(player);
+                } else {
+                    this.patrol();
+                }
+
+                this.checkForFamilyMemberCollisions([...mothers, ...fathers, ...siblings]);
+                break;
+            case 'family':
+                // Seek the closest family member
+                this.seekFamilyMember([...mothers, ...fathers, ...siblings]);
+                break;
+            case 'convertor':
+                this.seekFamilyMember([...mothers, ...fathers, ...siblings]);
+                break;
+            case 'bomber':
+                this.patrol();
+                this.placeBomb();
+                break;
+            default:
+                console.log("Invalid robot type");
+                break;
+        }
         // Attempt to move along the current path
         if (this.currentPath.length > 0) {
             let nextPos = this.currentPath[0];
             this.moveTo(nextPos.x, nextPos.y);
         }
 
+
         this.checkForPlayerCollision(player);
     }
+
+    checkForFamilyMemberCollisions(familyMembers) {
+        familyMembers.forEach(member => {
+            if (member.isActive && this.checkForFamilyMemberCollision(member)) {
+                member.isActive = false; // Deactivate the family member upon collision
+                robotKillSound.play();
+            }
+        });
+    }
+
 
     checkForPlayerCollision(player) {
         const distanceToPlayer = dist(this.posX, this.posY, player.posX, player.posY);
@@ -148,6 +213,7 @@ class Robot {
             player.lives -= 1; // Decrement player's lives
             this.isActive = false; // Deactivate the robot
             player.collide();
+            robotKillSound.play();
 
             // Optionally, handle the player's death or game over state
             if (player.lives <= 0) {
@@ -160,6 +226,92 @@ class Robot {
                 robots.splice(index, 1);
             }
         }
+    }
+
+    seekFamilyMember(familyMembers) {
+        if (!this.isActive || familyMembers.length === 0) return;
+
+        let closestMember = this.findClosestFamilyMember(familyMembers);
+
+        if (closestMember) {
+            let goal = [Math.floor(closestMember.posX / cellSize), Math.floor(closestMember.posY / cellSize)];
+            this.findNewPath({ posX: goal[0] * cellSize, posY: goal[1] * cellSize });
+
+            // If this is a convertor and it reaches a family member, convert instead of killing
+            if (this.checkForFamilyMemberCollision(closestMember)) {
+                if (this.type === 'convertor') {
+                    // Convert the family member for 'convertor' type
+                    this.convertFamilyMember(closestMember);
+                } else {
+                    // 'family' type robots kill the family member upon collision
+                    closestMember.isActive = false;
+                }
+            }
+        } else {
+            this.patrol();
+        }
+    }
+
+    // New method to check for collision with a family member (used by 'convertor' type)
+    checkForFamilyMemberCollision(familyMember) {
+        const distance = dist(this.posX, this.posY, familyMember.posX, familyMember.posY);
+        const collisionThreshold = this.size / 2 + familyMember.size / 2;
+
+        return distance < collisionThreshold;
+    }
+
+    convertFamilyMember(familyMember) {
+        // First, find the correct array and index of the family member
+        let array, index;
+        if (mothers.includes(familyMember)) {
+            array = mothers;
+            index = mothers.findIndex(member => member === familyMember);
+        } else if (fathers.includes(familyMember)) {
+            array = fathers;
+            index = fathers.findIndex(member => member === familyMember);
+        } else if (siblings.includes(familyMember)) {
+            array = siblings;
+            index = siblings.findIndex(member => member === familyMember);
+        }
+
+        // If the family member is found in one of the arrays
+        if (index !== -1) {
+            // Remove the family member from its array
+            array.splice(index, 1);
+
+            // Then, convert the family member to a bomber robot
+            let newRobot = new Robot(this.mapGraph, this.speed, 'bomber');
+            newRobot.gridPosition = [Math.floor(familyMember.posX / cellSize), Math.floor(familyMember.posY / cellSize)];
+            newRobot.posX = familyMember.posX;
+            newRobot.posY = familyMember.posY;
+            robots.push(newRobot); // Assuming robots is the array storing your game's robots
+
+            // Set the family member to inactive, if you keep them for any reason
+            familyMember.isActive = false;
+        }
+    }
+
+
+    // New method to find the closest family member
+    findClosestFamilyMember(familyMembers) {
+        let closestDistance = Infinity;
+        let closestMember = null;
+
+        familyMembers.forEach(member => {
+            if (!member.isActive) return;
+
+            let distance = this.heuristic(
+                { x: this.posX, y: this.posY },
+                { x: member.posX, y: member.posY }
+            );
+
+            if (distance < closestDistance) {
+                closestDistance = distance;
+                closestMember = member;
+            }
+        });
+
+        return closestMember;
     }
 
     checkCollision(bullet) {
@@ -249,8 +401,8 @@ class Robot {
         if (!this.isActive) return;
 
         push();
-        fill(40);
-        noStroke();
+        fill(this.color[0], this.color[1], this.color[2]);
+        stroke(0);
         rectMode(CENTER);
         square(this.posX, this.posY, this.size);
         noFill();

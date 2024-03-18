@@ -79,7 +79,6 @@ class FamilyMember {
 
         this.isFleeingFromRobots = this.fleeFromRobots(mapGraph, robots, fleeThreshold);
 
-        // console.log("robots: ", robots);
         if (this.isFleeingFromRobots) {
             // If fleeing, move along the current path
             if (this.currentPath.length > 1) {
@@ -88,7 +87,7 @@ class FamilyMember {
                 this.moveTo(nextPos.x, nextPos.y);
 
                 // Move based on velocity and deltaTime
-                let delta = deltaTime / 1000; // Convert to seconds
+                let delta = customDeltaTime / 1000; // Convert to seconds
                 this.posX += this.velX * delta;
                 this.posY += this.velY * delta;
 
@@ -127,7 +126,7 @@ class FamilyMember {
                 this.moveTo(nextPos.x, nextPos.y);
 
                 // Move based on velocity and deltaTime
-                let delta = deltaTime / 1000; // Convert to seconds
+                let delta = customDeltaTime / 1000; // Convert to seconds
                 this.posX += this.velX * delta;
                 this.posY += this.velY * delta;
 
@@ -307,18 +306,9 @@ class FamilyMember {
                 this.lastRobotGridPosition[1] !== robotGridPosition[1] ||
                 this.currentPath.length === 0;
 
-            console.log("should: ", shouldRecalculatePath);
-            console.log("last robot pos: ", this.lastRobotGridPosition);
-            console.log("curr robot pos: ", robotGridPosition);
-            console.log("path: ", this.currentPath);
-
-
-
             if (!shouldRecalculatePath) {
                 return;
             }
-
-            let possibleFleePoints = []; // Initialize an empty array to store valid flee points
 
 
             // Calculate the direction vector from the robot to the family member
@@ -373,14 +363,29 @@ class FamilyMember {
         return this.isFleeingFromRobots;
     }
 
-
-
-
-
     isCellValid(x, y) {
         return x >= 0 && x < gridSize && y >= 0 && y < gridSize && grid[x][y] === 1;
     }
 
+    checkCollisionWithRobot(robot) {
+        if (!this.isActive || !robot.isActive) {
+            return false;
+        }
+
+        let dx = this.posX - robot.posX;
+        let dy = this.posY - robot.posY;
+        let distance = Math.sqrt(dx * dx + dy * dy);
+
+        // Check if the distance is less than the sum of their radii
+        if (distance < (this.size / 2 + robot.size / 2)) {
+            this.isActive = false; // Deactivate the family member
+
+            return true;
+        }
+
+
+        return false;
+    }
 
 
 }

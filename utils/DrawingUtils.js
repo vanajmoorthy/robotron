@@ -56,6 +56,38 @@ function drawGraph(graph) {
     }
 }
 
+
+function displayGameInfo() {
+    push();
+    fill(255); // Text color
+    textSize(cellSize / 2);
+    textAlign(LEFT);
+    text(`Lives remaining: ${player.lives}`, cellSize / 2, cellSize / 2);
+    text(`Score: ${totalScore}`, cellSize / 2, cellSize * 1.5);
+
+    pop();
+}
+
+function displayGameOver() {
+    background(0);
+    fill(255);
+    textSize(32);
+    textAlign(CENTER, CENTER);
+    text('Game Over! Click the restart button to play again', width / 2, height / 2);
+}
+
+function drawPauseMenu() {
+    // Overlay a semi-transparent rectangle to create a dimming effect
+    fill(0, 0, 0, 150);
+    rect(0, 0, width, height);
+
+    // Display pause menu text
+    fill(255); // White color for the text
+    textSize(32);
+    textAlign(CENTER, CENTER);
+    text('Paused', width / 2, height / 2);
+}
+
 // Function to draw the grid on the canvas
 function drawGrid() {
     let cellSize = windowSize / gridSize; // Calculate the size of each grid cell
@@ -91,7 +123,7 @@ function drawGrid() {
             fill(255); // Text color
 
             // For debugging
-            text(`${x},${y}`, x * cellSize + cellSize / 2, y * cellSize + cellSize / 2);
+            // text(`${x},${y}`, x * cellSize + cellSize / 2, y * cellSize + cellSize / 2);
             // text(`${grid[x][y]}`, x * cellSize + cellSize / 2, y * cellSize + cellSize / 2);
 
         }

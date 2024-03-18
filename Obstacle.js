@@ -10,7 +10,7 @@ class Obstacle {
     show() {
         if (this.isActive) {
             push();
-            fill(255, 0, 0, 255);
+            fill(255, 0, 0, 150);
             noStroke();
             rectMode(CENTER);
             square(this.posX, this.posY, this.size);

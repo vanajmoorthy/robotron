@@ -5,6 +5,7 @@ class Player {
         this.posY;
         this.size = cellSize - 10;
         this.lives = lives;
+        this.lastScoreGain = 0;
         this.speed = speed;
         this.hitTime = 0;          // Time since the player was hit
         this.hitDuration = 500;   // Duration of hit effect in milliseconds
@@ -47,7 +48,7 @@ class Player {
     }
 
     move() {
-        const speedPerFrame = this.speed * (deltaTime / 1000); // Convert speed to per-frame movement
+        const speedPerFrame = this.speed * (customDeltaTime / 1000); // Convert speed to per-frame movement
 
         let moved = false; // Track if the player has moved
 
